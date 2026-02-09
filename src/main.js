@@ -206,6 +206,7 @@ class App {
 
     // Add or find the decal material in the palette
     let matIndex = -1;
+    let isNew = false;
     for (let i = 0; i < this.model.palette.count; i++) {
       if (this.model.palette.getColor(i).toLowerCase() === color.toLowerCase()) {
         matIndex = i;
@@ -214,6 +215,7 @@ class App {
     }
     if (matIndex === -1) {
       matIndex = this.model.palette.addMaterial('Decal', color);
+      isNew = true;
     }
 
     // Apply
@@ -221,11 +223,12 @@ class App {
     this.meshRenderer.updateColors();
     this.controls.updateMaterials(this.model.palette);
 
+    const count = this.previewTriangles.size;
     // Reset decal state
     this.previewTriangles = null;
     this.svgData = null;
     this.controls.hideDecalControls();
-    this.toolbar.setStatus(`Decal applied (${matIndex === -1 ? 'new' : 'existing'} material)`);
+    this.toolbar.setStatus(`Decal applied: ${count} triangles (${isNew ? 'new' : 'existing'} material)`);
   }
 
   _handleCancelDecal() {

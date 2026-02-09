@@ -56,6 +56,10 @@ export class SVGDecalLoader {
       }
     }
 
+    if (shapes.length === 0 || minX === Infinity) {
+      return { x: 0, y: 0, width: 0, height: 0 };
+    }
+
     return {
       x: minX,
       y: minY,
