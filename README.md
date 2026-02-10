@@ -2,6 +2,8 @@
 
 A browser-based tool for projecting SVG decals onto 3D meshes and exporting multi-color 3MF files for Bambu Studio.
 
+**Live app: https://mbreiser.github.io/mesh-ink/**
+
 ## Quick Start
 
 ```bash
