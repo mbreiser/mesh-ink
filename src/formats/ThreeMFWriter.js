@@ -13,13 +13,15 @@ export class ThreeMFWriter {
    * @returns {Promise<Blob>}
    */
   async write(model, originalZip, modelPath) {
-    // Clone the original ZIP so we don't mutate it
     const zip = new JSZip();
 
-    // Copy all original files
+    // Copy original files, but skip model files we'll regenerate
+    // and external object files (we flatten into one model)
     for (const [path, file] of Object.entries(originalZip.files)) {
       if (file.dir) continue;
-      if (path === modelPath) continue; // We'll regenerate this
+      if (path === modelPath) continue;
+      // Skip external model files from Production Extension — we flatten everything
+      if (path.startsWith('3D/Objects/') && path.endsWith('.model')) continue;
       const data = await file.async('arraybuffer');
       zip.file(path, data);
     }
