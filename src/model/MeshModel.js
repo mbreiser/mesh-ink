@@ -49,4 +49,20 @@ export class MeshModel {
   setTriangleMaterial(triIndex, materialIndex) {
     this.triangleMaterials[triIndex] = materialIndex;
   }
+
+  /**
+   * Compute the bounding box size (max dimension) of the mesh.
+   * @returns {number}
+   */
+  getBoundingSize() {
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for (let i = 0; i < this.vertices.length; i += 3) {
+      const x = this.vertices[i], y = this.vertices[i + 1], z = this.vertices[i + 2];
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+      if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+    }
+    return Math.max(maxX - minX, maxY - minY, maxZ - minZ);
+  }
 }
