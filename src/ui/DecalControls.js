@@ -25,8 +25,8 @@ export class DecalControls {
         </div>
         <div class="control-row">
           <label>Scale</label>
-          <input type="range" id="decal-scale" min="1" max="200" value="50">
-          <span id="decal-scale-value">50</span>
+          <input type="range" id="decal-scale" min="1" max="200" value="20">
+          <span id="decal-scale-value">20</span>
         </div>
         <div class="control-row">
           <label>Rotation</label>
@@ -34,9 +34,9 @@ export class DecalControls {
           <span id="decal-rotation-value">0°</span>
         </div>
         <div class="control-row">
-          <label>Max Depth</label>
-          <input type="range" id="decal-depth" min="1" max="200" value="100">
-          <span id="decal-depth-value">100</span>
+          <label>Depth</label>
+          <input type="range" id="decal-depth" min="0.5" max="50" value="5" step="0.5">
+          <span id="decal-depth-value">5</span>
         </div>
         <p class="hint" id="decal-hint">Click on the model to place the decal</p>
         <div class="button-row">
@@ -108,6 +108,31 @@ export class DecalControls {
   enableApply() {
     this.element.querySelector('#btn-apply-decal').disabled = false;
     this.element.querySelector('#decal-hint').textContent = 'Adjust scale/rotation, then Apply';
+  }
+
+  /**
+   * Set scale/depth slider ranges based on model bounding size.
+   */
+  configureForModel(modelSize) {
+    const scaleSlider = this.element.querySelector('#decal-scale');
+    const depthSlider = this.element.querySelector('#decal-depth');
+
+    // Scale range: 1 to 2x model size, default ~15% of model size
+    const defaultScale = Math.max(1, Math.round(modelSize * 0.15));
+    const maxScale = Math.max(10, Math.round(modelSize * 2));
+    scaleSlider.min = 1;
+    scaleSlider.max = maxScale;
+    scaleSlider.value = defaultScale;
+    this.element.querySelector('#decal-scale-value').textContent = defaultScale;
+
+    // Depth range: 0.5 to half model size, default ~5% of model
+    const defaultDepth = Math.max(1, Math.round(modelSize * 0.05));
+    const maxDepth = Math.max(5, Math.round(modelSize * 0.5));
+    depthSlider.min = 0.5;
+    depthSlider.max = maxDepth;
+    depthSlider.value = defaultDepth;
+    depthSlider.step = 0.5;
+    this.element.querySelector('#decal-depth-value').textContent = defaultDepth;
   }
 
   get isDecalActive() {

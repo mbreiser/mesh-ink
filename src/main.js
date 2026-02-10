@@ -19,6 +19,7 @@ class App {
     this.modelPath = null;
     this.svgData = null;        // { shapes, bounds }
     this.previewTriangles = null;
+    this._previewTimer = null;
 
     // 3D
     this.sceneManager = null;
@@ -125,6 +126,8 @@ class App {
     this.toolbar.enableModelButtons();
     this.controls.updateMaterials(this.model.palette);
     this.controls.updateModelInfo(this.model);
+    // Auto-configure decal sliders based on model size
+    this.controls.configureForModel(this.model.getBoundingSize());
     this.toolbar.setStatus(`Loaded: ${this.model.triangleCount.toLocaleString()} triangles`);
   }
 
@@ -196,7 +199,17 @@ class App {
     if (!this.decalPlacer.active) return;
     this.decalPlacer.scale = this.controls.decalScale;
     this.decalPlacer.rotation = this.controls.decalRotation;
-    this._updateDecalPreview();
+    // Debounce: wait 150ms after last slider change before recomputing
+    this._schedulePreviewUpdate();
+  }
+
+  _schedulePreviewUpdate() {
+    if (this._previewTimer) clearTimeout(this._previewTimer);
+    this.toolbar.setStatus('Updating preview...');
+    this._previewTimer = setTimeout(() => {
+      this._previewTimer = null;
+      this._updateDecalPreview();
+    }, 150);
   }
 
   _updateDecalPreview() {
@@ -208,12 +221,14 @@ class App {
     const projection = this.decalPlacer.getProjection(this.svgData.bounds);
     if (!projection) return;
 
+    const t0 = performance.now();
     const hitTris = this.decalProjector.project(
       this.model,
       this.svgData.shapes,
       projection,
       this.controls.decalDepth
     );
+    const elapsed = Math.round(performance.now() - t0);
 
     this.previewTriangles = hitTris;
 
@@ -221,7 +236,7 @@ class App {
     const color = this.controls.decalColor;
     this.meshRenderer.previewTriangles(hitTris, color);
 
-    this.toolbar.setStatus(`Preview: ${hitTris.size} triangles selected`);
+    this.toolbar.setStatus(`Preview: ${hitTris.size} triangles (${elapsed}ms)`);
   }
 
   _handleApplyDecal() {
