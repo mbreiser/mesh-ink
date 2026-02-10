@@ -9,6 +9,7 @@ import { DecalPlacer } from './decal/DecalPlacer.js';
 import { DecalProjector } from './decal/DecalProjector.js';
 import { Toolbar } from './ui/Toolbar.js';
 import { DecalControls } from './ui/DecalControls.js';
+import { PlateSelector } from './ui/PlateSelector.js';
 
 class App {
   constructor() {
@@ -36,6 +37,7 @@ class App {
     // UI
     this.toolbar = null;
     this.controls = null;
+    this.plateSelector = new PlateSelector();
   }
 
   init() {
@@ -86,21 +88,44 @@ class App {
         this.modelPath = null;
       } else {
         const result = await this.threeMFReader.read(buffer);
-        this.model = result.model;
-        this.zip = result.zip;
-        this.modelPath = result.modelPath;
+
+        // Multi-plate file — show plate selector
+        if (!result.model && result.plates && result.plates.length > 1) {
+          this.toolbar.setStatus(`Found ${result.plates.length} plates — select one`);
+          try {
+            const plateIndex = await this.plateSelector.show(result.plates);
+            const plateResult = plateIndex === -1
+              ? this.threeMFReader.readPlate(0) // "Load All" — load first plate for now
+              : this.threeMFReader.readPlate(plateIndex);
+            this.model = plateResult.model;
+            this.zip = plateResult.zip;
+            this.modelPath = plateResult.modelPath;
+          } catch (e) {
+            // User cancelled
+            this.toolbar.setStatus('Cancelled');
+            return;
+          }
+        } else {
+          this.model = result.model;
+          this.zip = result.zip;
+          this.modelPath = result.modelPath;
+        }
       }
 
-      this.meshRenderer.setModel(this.model);
-      this.sceneManager.fitToObject(this.meshRenderer.meshGroup);
-      this.toolbar.enableModelButtons();
-      this.controls.updateMaterials(this.model.palette);
-      this.controls.updateModelInfo(this.model);
-      this.toolbar.setStatus(`Loaded: ${this.model.triangleCount.toLocaleString()} triangles`);
+      this._showModel();
     } catch (err) {
       console.error('Error loading file:', err);
       this.toolbar.setStatus(`Error: ${err.message}`);
     }
+  }
+
+  _showModel() {
+    this.meshRenderer.setModel(this.model);
+    this.sceneManager.fitToObject(this.meshRenderer.meshGroup);
+    this.toolbar.enableModelButtons();
+    this.controls.updateMaterials(this.model.palette);
+    this.controls.updateModelInfo(this.model);
+    this.toolbar.setStatus(`Loaded: ${this.model.triangleCount.toLocaleString()} triangles`);
   }
 
   async _handleAddSvg(file) {
