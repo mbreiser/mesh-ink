@@ -138,7 +138,7 @@ class App {
       this.svgData = this.decalLoader.parse(text);
       this.decalPlacer = new DecalPlacer(); // Reset placer
       this.controls.showDecalControls();
-      this.toolbar.setStatus('Click on the model to place the decal');
+      this.toolbar.setStatus(`SVG: ${this.svgData.shapes.length} shapes — click on model to place`);
     } catch (err) {
       console.error('Error loading SVG:', err);
       this.toolbar.setStatus(`Error: ${err.message}`);
@@ -224,7 +224,7 @@ class App {
     const t0 = performance.now();
     const hitTris = this.decalProjector.project(
       this.model,
-      this.svgData.shapes,
+      this.svgData.bitmap,
       projection,
       this.controls.decalDepth
     );
@@ -232,9 +232,10 @@ class App {
 
     this.previewTriangles = hitTris;
 
-    // Show preview color
+    // Show preview: colored triangles + SVG outline on mesh
     const color = this.controls.decalColor;
     this.meshRenderer.previewTriangles(hitTris, color);
+    this.meshRenderer.showDecalOutline(this.svgData.shapes, projection);
 
     this.toolbar.setStatus(`Preview: ${hitTris.size} triangles (${elapsed}ms)`);
   }
@@ -267,6 +268,7 @@ class App {
     // Reset decal state
     this.previewTriangles = null;
     this.svgData = null;
+    this.meshRenderer.removeDecalOutline();
     this.controls.hideDecalControls();
     this.toolbar.setStatus(`Decal applied: ${count} triangles (${isNew ? 'new' : 'existing'} material)`);
   }
@@ -278,6 +280,7 @@ class App {
     }
     this.previewTriangles = null;
     this.svgData = null;
+    this.meshRenderer.removeDecalOutline();
     this.controls.hideDecalControls();
     this.toolbar.setStatus('Decal cancelled');
   }

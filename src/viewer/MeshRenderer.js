@@ -126,7 +126,88 @@ export class MeshRenderer {
     colorAttr.needsUpdate = true;
   }
 
+  /**
+   * Show the SVG decal outline as 3D lines on the mesh surface.
+   * This gives the user a clear visual preview of the decal shape.
+   * @param {Array<THREE.Shape>} shapes - SVG shapes to render
+   * @param {{ transform: Function, projectionBasis: Object }} projection
+   */
+  showDecalOutline(shapes, projection) {
+    this.removeDecalOutline();
+
+    const { transform, projectionBasis } = projection;
+    const normal = projectionBasis.normal;
+
+    // Offset lines slightly along the normal to prevent z-fighting
+    const offset = new THREE.Vector3().copy(normal).multiplyScalar(0.15);
+
+    this._outlineMaterial = new THREE.LineBasicMaterial({
+      color: 0x00ff88,
+      depthTest: true,
+      transparent: true,
+      opacity: 0.9,
+    });
+
+    this._outlineGroup = new THREE.Group();
+
+    for (const shape of shapes) {
+      const points = shape.getPoints(64);
+      if (points.length < 2) continue;
+
+      const points3D = [];
+      for (const p of points) {
+        const worldPt = transform(p.x, p.y);
+        points3D.push(worldPt.clone().add(offset));
+      }
+      // Close the loop
+      const first = transform(points[0].x, points[0].y);
+      points3D.push(first.clone().add(offset));
+
+      const geometry = new THREE.BufferGeometry().setFromPoints(points3D);
+      this._outlineGroup.add(new THREE.Line(geometry, this._outlineMaterial));
+
+      // Draw holes
+      if (shape.holes) {
+        for (const hole of shape.holes) {
+          const holePoints = hole.getPoints(64);
+          if (holePoints.length < 2) continue;
+
+          const holePoints3D = [];
+          for (const p of holePoints) {
+            const wp = transform(p.x, p.y);
+            holePoints3D.push(wp.clone().add(offset));
+          }
+          const firstHole = transform(holePoints[0].x, holePoints[0].y);
+          holePoints3D.push(firstHole.clone().add(offset));
+
+          const holeGeo = new THREE.BufferGeometry().setFromPoints(holePoints3D);
+          this._outlineGroup.add(new THREE.Line(holeGeo, this._outlineMaterial));
+        }
+      }
+    }
+
+    this.scene.add(this._outlineGroup);
+  }
+
+  /**
+   * Remove the SVG decal outline preview.
+   */
+  removeDecalOutline() {
+    if (this._outlineGroup) {
+      this._outlineGroup.traverse(child => {
+        if (child.geometry) child.geometry.dispose();
+      });
+      if (this._outlineMaterial) {
+        this._outlineMaterial.dispose();
+        this._outlineMaterial = null;
+      }
+      this.scene.remove(this._outlineGroup);
+      this._outlineGroup = null;
+    }
+  }
+
   clear() {
+    this.removeDecalOutline();
     if (this.meshGroup) {
       this.scene.remove(this.meshGroup);
       if (this.threeMesh) {

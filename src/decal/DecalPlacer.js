@@ -94,6 +94,7 @@ export class DecalPlacer {
       transform,
       inverseTransform,
       worldScale,
+      svgCenter: { x: svgCenterX, y: svgCenterY },
     };
   }
 }
